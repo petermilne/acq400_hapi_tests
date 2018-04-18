@@ -53,7 +53,7 @@ def configure_shot(args):
 
 
 def run_main():
-    parser = argparse.ArgumentParser(description='configure multiple acq1014')
+    parser = argparse.ArgumentParser(description='configure multiple acq400')
     parser.add_argument('--pre', default=0, help="pre trigger length")
     parser.add_argument('--post', default=100000, help="post trigger length")
     parser.add_argument('--clk', default="int 50000000", help='clk "int|ext SR [CR]"')
