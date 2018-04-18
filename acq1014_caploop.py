@@ -55,6 +55,8 @@ def run_loop(args):
                 if err:
                     break
 
+            if args.once:
+                break
             if args.sleep >= 0:
                 acq400_hapi.cleanup.sleep(args.sleep)            
             else:
@@ -73,6 +75,7 @@ def run_main():
     parser.add_argument('--sleep', default=1, type=int, help="sleep time between shots, -1:pause input")
     parser.add_argument('--trg', default='int', type=str, help="trigger int|ext")
     parser.add_argument('--nsam', default=0, type=int, help='expected number of samples')
+    parser.add_argument('--once', default=0, type=int, help='run once')
     parser.add_argument('uuts', nargs='+', help="uut pairs: m1,m2 [s1,s2 ...]")
     run_loop(parser.parse_args())
 
