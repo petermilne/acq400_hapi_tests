@@ -85,7 +85,7 @@ def run_main():
     parser.add_argument('--post', default=0, help="capture samples [default:0 inifinity]")
     parser.add_argument('--secs', default=999999, help="capture seconds [default:0 inifinity]")
     parser.add_argument('--clk', default="int 50000000", help='clk "int|ext,SR,[CR]"')
-    parser.add_argument('--trg', default="int", help='trg "int|ext,rising|falling"')
+    parser.add_argument('--trg', default="notouch", help='trg "int|ext,rising|falling"')
     parser.add_argument('--sim', default="nosim", help='list of sites to run in simulate mode')
     parser.add_argument('--commsA', default="all", help='custom list of sites for commsA')
     parser.add_argument('--commsB', default="none", help='custom list of sites for commsB')
