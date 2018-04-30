@@ -41,8 +41,11 @@ import sys
 import os
 import acq400_hapi
 import argparse
-from MDSplus import *
 import time
+USING_MDSPLUS=0
+
+if USING_MDSPLUS:
+    from MDSplus import *
 
 def odd(n):
     return n%2 == 1
@@ -50,7 +53,13 @@ def odd(n):
 def even(n):
     return n%2 == 0
 
-def set_next_shot(args, flavour, info):
+__shot = 0
+def null_set_next_shot(args, flavour, info):
+    global __shot
+    __shot += 1
+    return __shot
+
+def mds_set_next_shot(args, flavour, info):
     old_shots = [Tree.getCurrent(u) for u in args.uuts]
     sn = max(old_shots) + 1
     # this is only going to run once
@@ -63,11 +72,21 @@ def set_next_shot(args, flavour, info):
     return sn
 
 
+if USING_MDSPLUS:
+    set_next_shot = mds_set_next_shot
+else:
+    set_next_shot = null_set_next_shot
+
 def run_cal1(uut, shot):
     txt = uut.run_service(acq400_hapi.AcqPorts.BOLO8_CAL, eof="END")
-    logfile = "{}/cal_{}".format(os.getenv("{}_path".format(uut.uut), "."), shot)
-    with open(logfile, 'w') as log: 
-        log.write(txt)
+    logfile = "{}/cal_{}.log".format(os.getenv("{}_path".format(uut.uut), "."), shot)
+    try:
+        with open(logfile, 'w') as log: 
+            log.write(txt)
+    except IOError as e:
+        with open("./cal_{}.log".format(shot)) as log:
+            log.write(txt)
+
 
 
 
