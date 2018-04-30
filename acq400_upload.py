@@ -50,9 +50,9 @@ def upload(args):
         trigger_action = None
         st = SOFT_TRIGGER
     try:  
-        if args.capture:
+        if args.capture > 0:
             shot_controller.run_shot(soft_trigger = st, remote_trigger = trigger_action)
-        else:
+        elif args.capture == 0:
             state = '99'
             while state != '0':
                 state = uuts[0].s0.state.split()[0]
@@ -107,7 +107,7 @@ def run_main():
     parser.add_argument('--trace_upload', default=TRACE_UPLOAD, type=int, help="1: verbose upload")
     parser.add_argument('--save_data', default=SAVEDATA, type=str, help="store data to specified directory")
     parser.add_argument('--plot_data', default=PLOTDATA, type=int, help="1: plot data")
-    parser.add_argument('--capture', default=CAPTURE, type=int, help="1: capture data")
+    parser.add_argument('--capture', default=CAPTURE, type=int, help="1: capture data, 0: wait for someone else to capture, -1: just upload")
     parser.add_argument('--remote_trigger', default=None, type=str, help="your function to fire trigger")
     parser.add_argument('--channels', default=CHANNELS, type=str, help="comma separated channel list")
     parser.add_argument('uuts', nargs = '+', help="uut[s]")
