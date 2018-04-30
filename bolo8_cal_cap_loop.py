@@ -82,9 +82,12 @@ def run_cal1(uut, shot):
     logfile = "{}/cal_{}.log".format(os.getenv("{}_path".format(uut.uut), "."), shot)
     try:
         with open(logfile, 'w') as log: 
+            print("logging to {}".format(logfile))
             log.write(txt)
     except IOError as e:
-        with open("./cal_{}.log".format(shot)) as log:
+        logfile = "./cal_{}.log".format(shot)
+        with open(logfile, 'w') as log:
+            print("logging to {}".format(logfile))
             log.write(txt)
 
 
