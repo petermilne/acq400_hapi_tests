@@ -20,7 +20,13 @@
 import sys
 import acq400_hapi
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    plot_ok = 1
+except RuntimeError as e:
+    print("Sorry, plotting not available {}".format(e))
+    plot_ok = 0
+
 import os
 import argparse
 import re
@@ -80,7 +86,7 @@ def upload(args):
 # 13 23
 # ...
 # 18 28     15 16
-        if PLOTDATA:
+        if plot_ok and args.plot_data:
             for col in range(ncol):
                 for chn in range(0,nchan):
                     fignum = 1 + col + chn*ncol
