@@ -45,9 +45,7 @@ class UploadFilter:
             self.line = 0
 
 
-def set_simulate(uut, enable):
-    for s in uut.modules:
-        uut.modules[s].simulate = '1' if enable else '0'
+
 
 def run_shot(uut, args):
         # always capture over. The offload is zero based anyway, so add another one
@@ -96,13 +94,12 @@ def run_shots(args):
 
 def run_main():
     parser = argparse.ArgumentParser(description='acq2106 mgtdram test')
+    acq400_hapi.Acq400UI.add_args(parser)
     parser.add_argument('--loop', type=int, default=1, help="loop count")
     parser.add_argument('--captureblocks', type=int, default="2000", help='number of 4MB blocks to capture')
     parser.add_argument('--offloadblocks', type=str, default="capture", help='block list to upload nnn-nnn')
-    parser.add_argument('--validate', type=str, default='no', help='program to validate data')
-    parser.add_argument('--trg', default="int", help='trg "int|ext rising|falling"')
+    parser.add_argument('--validate', type=str, default='no', help='program to validate data')    
     parser.add_argument('--wait_user', type=int, default=0, help='1: force user input each shot')
-    parser.add_argument('--simulate', type=int, default=1, help='enable simulate (ramp) on modules')
     parser.add_argument('uut', nargs=1, help="uut ")
     run_shots(parser.parse_args())
 

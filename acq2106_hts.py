@@ -13,34 +13,8 @@ import time
 
 
 def config_shot(uut, args):
-    if args.trg != "notouch":
-        uut.s1.trg = "1,%d,%d" % (0 if args.trg.split(',')[0] == 'ext' else 1,
-                                  0 if args.trg.split(',')[1] == 'falling' else 1)
-
-    c_args = args.clk.split(',')
-    if len(c_args) > 1:
-        c_args[1] = intSI(c_args[1])
-        if len(c_args) > 2:
-            c_args[2] = intSI(c_args[2])
-    # worktodo .. set clock 
+    acq400_hapi.Acq400UI.exec_args(uut, args) 
     uut.s0.run0 = uut.s0.sites
-
-    for s in args.sim.split(','):
-        print "hello s {}".format(s)
-
-    if str(3) in args.sim.split(','):
-        print "in"
-    else:
-        print "NOT IN"
-
-    sim_sites = {}
-    if args.sim != "nosim":
-        sim_sites = [ int(s) for s in args.sim.split(',')]
-
-    for site in uut.modules:
-        sim = '1' if site in sim_sites else '0'
-        uut.svc['s%s' % (site)].simulate = sim
-        print "site {} sim {}".format(site, sim)
 
 
 def init_comms(uut, args):
@@ -80,13 +54,11 @@ def run_shot(args):
 
 
 
-def run_main():
+def run_main():    
     parser = argparse.ArgumentParser(description='configure acq2106 High Throughput Stream')    
+    acq400_hapi.Acq400UI.add_args(parser)
     parser.add_argument('--post', default=0, help="capture samples [default:0 inifinity]")
     parser.add_argument('--secs', default=999999, help="capture seconds [default:0 inifinity]")
-    parser.add_argument('--clk', default="int 50000000", help='clk "int|ext,SR,[CR]"')
-    parser.add_argument('--trg', default="notouch", help='trg "int|ext,rising|falling"')
-    parser.add_argument('--sim', default="nosim", help='list of sites to run in simulate mode')
     parser.add_argument('--commsA', default="all", help='custom list of sites for commsA')
     parser.add_argument('--commsB', default="none", help='custom list of sites for commsB')
     parser.add_argument('uut', nargs='+', help="uut ")
