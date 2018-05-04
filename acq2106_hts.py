@@ -18,11 +18,16 @@ def config_shot(uut, args):
 
 
 def init_comms(uut, args):
+    if args.spad != None:
+        uut.s0.spad = args.spad
+        # use spare spad elements as data markers
+        for sp in ('1', '2', '3', '4' , '5', '6', '7'):
+            uut.s0.sr("spad{}={}".format(sp, sp*8))
     if args.commsA != "none":
-        uut.cA.spad = 0
+        uut.cA.spad = 0 if args.spad == None else 1
         uut.cA.aggregator = "sites=%s" % (uut.s0.sites if args.commsA == 'all' else args.commsA)
     if args.commsB != "none":
-        uut.cB.spad = 0
+        uut.cB.spad = 0 if args.spad == None else 1
         uut.cB.aggregator = "sites=%s" % (uut.s0.sites if args.commsB == 'all' else args.commsB)
 
 def init_work(uut, args):
@@ -59,6 +64,7 @@ def run_main():
     acq400_hapi.Acq400UI.add_args(parser)
     parser.add_argument('--post', default=0, help="capture samples [default:0 inifinity]")
     parser.add_argument('--secs', default=999999, help="capture seconds [default:0 inifinity]")
+    parser.add_argument('--spad', default=None, help="scratchpad, eg 1,16,0")
     parser.add_argument('--commsA', default="all", help='custom list of sites for commsA')
     parser.add_argument('--commsB', default="none", help='custom list of sites for commsB')
     parser.add_argument('uut', nargs='+', help="uut ")
