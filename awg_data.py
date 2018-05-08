@@ -148,11 +148,12 @@ class Pulse:
 
 
 class ZeroOffset:   
-    def __init__(self, uut, nchan, nsam, run_forever=False, gain = 0.1, passvalue = 1, aochan = 0, ao0 = 0):
+    def __init__(self, uut, nchan, nsam, target=0, run_forever=False, gain = 0.1, passvalue = 1, aochan = 0, ao0 = 0):
         print("ZeroOffset")
         self.uut = uut
         self.nchan = nchan
         self.nsam = nsam
+        self.target = float(target)
         self.run_forever = run_forever
         if aochan == 0:
             aochan = nchan
@@ -194,8 +195,8 @@ class ZeroOffset:
             print(str)
 
     def feedback(self, fb_data):
-        actual = np.mean(fb_data[50:,:], 0)
-        errmax = max(abs(actual))
+        actual = np.mean(fb_data[50:,:], axis=0)
+        errmax = max(abs(actual - self.target))
         if  errmax < self.passvalue:
             print("maximum error {} is within bounds {}, save it".format(errmax, self.passvalue))
             self.defs.store_defaults(self.current)
@@ -203,9 +204,17 @@ class ZeroOffset:
         else:
             print("maximum error {}".format(errmax))
 
-        self.current = np.mean(self.aw, 0)[self.ao0:self.ao0+self.nchan]
-        newset = self.current - actual * self.KFB
-        print("newset {}".format(newset))        
+        self.current = np.mean(self.aw, axis=0)[self.ao0:self.ao0+self.nchan]
+        newset = self.current + (self.target - actual) * self.KFB
+        newset = np.clip(newset, -32768, 32767)
+
+        if self.verbose:
+            print("target       {}".format(self.target))
+            print("self.current {}".format(self.current))
+            print("actual       {}".format(actual))
+            print("gain         {}".format(self.KFB))
+            print("step         {}".format((self.target - actual) * self.KFB))
+            print("newset {}".format(newset))        
         if not self.identity_pattern:
             for ch in range(0, self.nchan):            
                 self.aw[:,self.ao0+ch] = newset[ch]
