@@ -13,19 +13,8 @@ import matplotlib.pyplot as plt
 import hil_plot_support as pltsup
 
 
-def run_shots(args):
-    uut = acq400_hapi.Acq400(args.uuts[0])
-    acq400_hapi.cleanup.init()
-    if args.plot:
-        plt.ion()
-
+def run_target(uut, args):
     args.plot_volts = True if args.set_volts != None else False
-    uut.s0.transient = 'POST=%d SOFT_TRIGGER=%d DEMUX=%d' % \
-        (args.post, 1 if args.trg == 'int' else 0, 1 if args.store==0 else 0) 
-
-    for sx in uut.modules:
-        uut.modules[sx].trg = '1,1,1'  if args.trg == 'int' else '1,0,1'
-
     work = awg_data.ZeroOffset(uut, args.nchan, args.awglen, 
                                target=(args.set_volts if args.plot_volts else 0),
                                aochan = int(args.aochan), 
@@ -49,21 +38,57 @@ def run_shots(args):
                     key = raw_input("hit return to continue, q for quit").strip()
                     if key == 'q':
                         work.user_quit = True
+                        if work.in_bounds:
+                            work.finished = True
                     print("raw_input {}".format(key))
-                    chx = np.reshape(uut.scale_raw(rdata, volts=args.plot_volts), (args.post, args.nchan))
-                    if args.plot_volts:
-                        chv = np.array([ uut.chan2volts(ch+1, chx[:,ch]) for ch in range(0, args.nchan)])
-                        print("feedback volts")
-                        work.feedback(np.transpose(chv))
-                    else:
-                        work.feedback(chx)
-                    ii += 1
+                else:
+                    if work.in_bounds:
+                        work.finished = True
+                chx = np.reshape(uut.scale_raw(rdata, volts=args.plot_volts), (args.post, args.nchan))
+                if args.plot_volts:
+                    chv = np.array([ uut.chan2volts(ch+1, chx[:,ch]) for ch in range(0, args.nchan)])
+                    print("feedback volts")
+                    work.feedback(np.transpose(chv))
+                else:
+                    work.feedback(chx)
+                ii += 1
     except StopIteration:
         print("offset zeroed within bounds")
     except acq400_hapi.acq400.Acq400.AwgBusyError:
-        print("AwgBusyError, try a soft trigger and quit, then re-run me")
+        print("AwgBusyError, trying a soft trigger and quit, then re-run me")
         uut.s0.soft_trigger = '1'
+        raise SystemExit
+    return work
 
+def run_transfer_function(uut, args):
+    targets = np.arange(-10, 10, args.transfer_function, dtype=float)
+    tf = []
+    for t in np.nditer(targets):
+        print("Target set {}".format(t))
+        args.set_volts = t
+        w = run_target(uut, args)
+	tf.append(np.append([t], w.newset))
+    
+     
+    np.savetxt("transfer_function.csv", np.array(tf), fmt="%6d", delimiter=',')
+
+
+def run_shots(args):
+    uut = acq400_hapi.Acq400(args.uuts[0])
+    acq400_hapi.cleanup.init()
+    if args.plot:
+        plt.ion()
+
+    uut.s0.transient = 'POST=%d SOFT_TRIGGER=%d DEMUX=%d' % \
+        (args.post, 1 if args.trg == 'int' else 0, 1 if args.store==0 else 0) 
+
+    for sx in uut.modules:
+        uut.modules[sx].trg = '1,1,1'  if args.trg == 'int' else '1,0,1'
+
+    if args.transfer_function:
+        run_transfer_function(uut, args)
+    else:
+        run_target(uut, args)
 
 
 def run_main():
@@ -82,6 +107,7 @@ def run_main():
     parser.add_argument('--plot', type=int, default=1, help='--plot 1 : plot data, 2: persistent')
     parser.add_argument('--wait_user', type=int, default=0, help='1: force user input each shot')
     parser.add_argument('--set_volts', default=None, help='list of voltages to converge to')
+    parser.add_argument('--transfer_function', default=0, type=float, help='generate transfer fun, step size in V')
     parser.add_argument('uuts', nargs=1, help="uut ")
     run_shots(parser.parse_args())
 

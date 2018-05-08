@@ -165,7 +165,7 @@ class ZeroOffset:
         self.finished = 0
         self.in_bounds = False
         self.KFB = gain
-        self.passvalue = passvalue/gain 
+        self.passvalue = float(passvalue/gain)
         self.identity_pattern = bool(int(os.getenv("IDENTITY_PATTERN", 0)))
         self.verbose = int(os.getenv("VERBOSE", 0))
         self.ao0 = ao0
@@ -196,7 +196,8 @@ class ZeroOffset:
 
     def feedback(self, fb_data):
         actual = np.mean(fb_data[50:,:], axis=0)
-        errmax = max(abs(actual - self.target))
+        error = actual - self.target
+        errmax = max(abs(error))
         if  errmax < self.passvalue:
             print("maximum error {} is within bounds {}, save it".format(errmax, self.passvalue))
             self.defs.store_defaults(self.current)
@@ -205,33 +206,44 @@ class ZeroOffset:
             print("maximum error {}".format(errmax))
   
         self.current = np.mean(self.aw, axis=0)[self.ao0:self.ao0+self.nchan]
-        newset = self.current + (self.target - actual) * self.KFB
-        newset = np.clip(newset, -32768, 32767)
+        self.newset = self.current + (self.target - actual) * self.KFB
+        self.newset = np.clip(self.newset, -32768, 32767)
 
-        if np.max(newset) >= 32767 or np.min(newset) <= 32768:
+        if np.max(self.newset) >= 32767 or np.min(self.newset) <= 32768:
             print("Hit rails good idea to quit")
-            self.in_bounds = True
+            passcount=0
+	    railcount=0
+            for e in np.nditer(error):
+		if abs(e) < self.passvalue:
+                    passcount += 1
+                elif abs(e) >= 32767:
+                    railcount +=1
+            if passcount+railcount > len(error)/2:
+                self.in_bounds = True
 
         if self.verbose or self.in_bounds:
             np.set_printoptions(linewidth=200, precision=3)
-            print("target       {}".format(self.target))
-            print("self.current {}".format(self.current))
-            print("actual       {}".format(actual))
-            print("gain         {}".format(self.KFB))
-            print("step         {}".format((self.target - actual) * self.KFB))
-            print("newset {}".format(newset))        
+            print("target  {}".format(self.target))
+            print("current {}".format(self.current))
+            print("actual  {}".format(actual))
+            print("error   {}".format(error))
+            print("errma   {}".format(errmax))
+            print("gain    {}".format(self.KFB))
+            print("step    {}".format((self.target - actual) * self.KFB))
+            print("newset  {}".format(self.newset))        
         if not self.identity_pattern:
             for ch in range(0, self.nchan):            
-                self.aw[:,self.ao0+ch] = newset[ch]
+                self.aw[:,self.ao0+ch] = self.newset[ch]
 
         self.aw.astype('int16').tofile("awg.dat")
 
 
+        
 
     def load(self, autorearm = False):
         self.vprint("load 01")
         yy = self
-        while not self.finished or not self.user_quit:
+        while not self.finished:
             self.vprint("load 10")
             if self.finished and self.apply_geometry:
                 print("apply_geometry")
