@@ -23,10 +23,15 @@ def store_file(it, rdata, nchan, nsam):
     with open(fn, 'wb') as f:
         f.write(rdata)
 
-def plot(it, rdata, nchan, nsam):
+def plot(uut, args, it, rdata):
+    nsam = args.post
+    nchan = args.nchan
     chx = np.reshape(rdata, (nsam, nchan))    
-    for ch in range(0,nchan):
-        plt.plot(chx[:,ch])
+    for ch in range(0, nchan):
+        if args.plot_volts:
+	    plt.plot(uut.chan2volts(ch+1, chx[:,ch]))
+	else:
+	    plt.plot(chx[:,ch])
 
     plt.show()
     plt.pause(0.0001)
@@ -61,6 +66,12 @@ def run_shots(args):
         else:
             rshift = 0
         break
+
+    # volts calibration is normalized to 24 bit value, not 32 bit
+    if args.plot_volts:
+        if rshift:
+            rshift = rshift - 8
+
     if args.pulse != None:
         work = awg_data.Pulse(uut, args.aochan, args.awglen, args.pulse.split(','))
     elif args.files != "":
@@ -107,7 +118,7 @@ def run_shots(args):
         if args.plot > 0 :
             plt.cla()
             plt.title("AI for shot %d %s" % (ii, "persistent plot" if args.plot > 1 else ""))
-            plot(ii, np.right_shift(rdata, rshift), args.nchan, args.post)                
+            plot(uut, args, ii, np.right_shift(rdata, rshift))
         if args.wait_user is not None:
             args.wait_user()
 
@@ -160,6 +171,7 @@ def run_main():
     parser.add_argument('--post', type=int, default=100000, help='samples in ADC waveform')
     parser.add_argument('--trg', default="int", help='trg "int|ext rising|falling"')
     parser.add_argument('--plot', type=int, default=1, help='--plot 1 : plot data, 2: persistent')
+    parser.add_argument('--plot_volts', type=int, default=0, help='1: plot values in volts')
     parser.add_argument('--wait_user', type=select_prompt_or_exec, default=0, help='1: force user input each shot')
     parser.add_argument('uuts', nargs=1, help="uut ")
     run_shots(parser.parse_args())
