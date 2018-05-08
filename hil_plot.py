@@ -10,31 +10,12 @@ import awg_data
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import hil_plot_support as pltsup
 import os
 import subprocess
 
-current_file = "nofile"
+import hil_plot_support as pltsup
 
-def store_file(it, rdata, nchan, nsam):
-    global current_file
-    fn = 'DATA/ai%04d.dat' % (it)
-    print("store_file {}".format(fn))
-    current_file = fn
-    with open(fn, 'wb') as f:
-        f.write(rdata)
-
-def plot(uut, args, it, rdata):
-    nsam = args.post
-    nchan = args.nchan
-    chx = np.reshape(uut.scale_raw(rdata, volts=args.plot_volts), (nsam, nchan))
-    for ch in range(0, nchan):
-        if args.plot_volts:
-	    plt.plot(uut.chan2volts(ch+1, chx[:,ch]))
-	else:
-	    plt.plot(chx[:,ch])
-
-    plt.show()
-    plt.pause(0.0001)
 
 def run_shots(args):
     uut = acq400_hapi.Acq400(args.uuts[0])
@@ -76,7 +57,6 @@ def run_shots(args):
             uut.modules[sx].GAIN_ALL = args.range
             break
 
-    store = store_file
     print("args.autorearm {}".format(args.autorearm))
 
     loader = work.load(autorearm = args.autorearm)
@@ -99,11 +79,11 @@ def run_shots(args):
         print("read_chan %d" % (args.post*args.nchan))
         rdata = uut.read_chan(0, args.post*args.nchan)
         if args.store:
-            store(ii, rdata, args.nchan, args.post)
+            pltsup.store_file(ii, rdata, args.nchan, args.post)
         if args.plot > 0 :
             plt.cla()
             plt.title("AI for shot %d %s" % (ii, "persistent plot" if args.plot > 1 else ""))
-            plot(uut, args, ii, rdata)
+            pltsup.plot(uut, args, ii, rdata)
         if args.wait_user is not None:
             args.wait_user()
 
@@ -115,8 +95,7 @@ class ExecFile:
     def __init__(self, fname):
         self.fname = fname
     def __call__(self):
-        global current_file
-        args = [self.fname, current_file]
+        args = [self.fname, pltsup.current_file]
         print("subprocess.call({})".format(args))
         subprocess.call(args, stdout=sys.stdout, shell=False)
 
