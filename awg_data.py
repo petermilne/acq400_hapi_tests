@@ -203,12 +203,17 @@ class ZeroOffset:
             self.in_bounds = True
         else:
             print("maximum error {}".format(errmax))
-
+  
         self.current = np.mean(self.aw, axis=0)[self.ao0:self.ao0+self.nchan]
         newset = self.current + (self.target - actual) * self.KFB
         newset = np.clip(newset, -32768, 32767)
 
-        if self.verbose:
+        if np.max(newset) >= 32767 or np.min(newset) <= 32768:
+            print("Hit rails good idea to quit")
+            self.in_bounds = True
+
+        if self.verbose or self.in_bounds:
+            np.set_printoptions(linewidth=200, precision=3)
             print("target       {}".format(self.target))
             print("self.current {}".format(self.current))
             print("actual       {}".format(actual))
@@ -220,6 +225,7 @@ class ZeroOffset:
                 self.aw[:,self.ao0+ch] = newset[ch]
 
         self.aw.astype('int16').tofile("awg.dat")
+
 
 
     def load(self, autorearm = False):
