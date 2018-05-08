@@ -26,7 +26,7 @@ def store_file(it, rdata, nchan, nsam):
 def plot(uut, args, it, rdata):
     nsam = args.post
     nchan = args.nchan
-    chx = np.reshape(rdata, (nsam, nchan))    
+    chx = np.reshape(uut.scale_raw(rdata, volts=args.plot_volts), (nsam, nchan))
     for ch in range(0, nchan):
         if args.plot_volts:
 	    plt.plot(uut.chan2volts(ch+1, chx[:,ch]))
@@ -57,21 +57,6 @@ def run_shots(args):
             else:
                 uut.modules[sx].trg = '1,0,1'
                 
-    for sx in uut.modules:
-        if uut.modules[sx].data32 == '1':
-            if uut.modules[sx].adc_18b == '1':
-                rshift = 14
-            else:
-                rshift = 16
-        else:
-            rshift = 0
-        break
-
-    # volts calibration is normalized to 24 bit value, not 32 bit
-    if args.plot_volts:
-        if rshift:
-            rshift = rshift - 8
-
     if args.pulse != None:
         work = awg_data.Pulse(uut, args.aochan, args.awglen, args.pulse.split(','))
     elif args.files != "":
@@ -118,7 +103,7 @@ def run_shots(args):
         if args.plot > 0 :
             plt.cla()
             plt.title("AI for shot %d %s" % (ii, "persistent plot" if args.plot > 1 else ""))
-            plot(uut, args, ii, np.right_shift(rdata, rshift))
+            plot(uut, args, ii, rdata)
         if args.wait_user is not None:
             args.wait_user()
 
