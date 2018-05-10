@@ -1,3 +1,5 @@
+# DEPRECATED: please use https://github.com/d-tacq/acq400_hapi/
+
 # acq400_hapi_tests
 test samples for acq400_hapi  
 
